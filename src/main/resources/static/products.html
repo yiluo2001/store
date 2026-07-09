@@ -5,6 +5,7 @@
     <title>Yi's Store - Products</title>
     <link rel="stylesheet" href="main.css">
     <script src="logout-login.js"></script>
+    <script src="config.js"></script>
     <style>
         .product-grid {
             display: grid;
@@ -138,7 +139,7 @@
         const catalogContainer = document.getElementById('productCatalog');
         
         try {
-            const response = await fetch('/api/products', {
+            const response = await fetch(`${BASE_URL}/api/products`, {
                 method: 'GET'
             });
 
@@ -191,7 +192,7 @@
         }
 
         try {
-            const response = await fetch(`/api/cart/add?productId=${productId}&quantity=1`, {
+            const response = await fetch(`${BASE_URL}/api/cart/add?productId=${productId}&quantity=1`, {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + token

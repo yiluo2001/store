@@ -5,6 +5,7 @@
     <title>Store - Shopping Cart</title>
     <link rel="stylesheet" href="main.css">
     <script src="logout-login.js"></script>
+    <script src="config.js"></script>
     <style>
         .cart-table {
             width: 100%;
@@ -208,7 +209,7 @@
         const wrapper = document.getElementById('cartContentWrapper');
 
         try {
-            const response = await fetch('/api/cart', {
+            const response = await fetch(`${BASE_URL}/api/cart`, {
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -276,7 +277,7 @@
         }
 
         try {
-            const response = await fetch(`/api/cart/update/${cartItemId}?quantity=${nextQuantityValue}`, {
+            const response = await fetch(`${BASE_URL}/api/cart/update/${cartItemId}?quantity=${nextQuantityValue}`, {
                 method: 'PUT',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -297,7 +298,7 @@
     // await does 2 things, make sure meal is fianlly ready, and signal the async (to out side world) starting point
     async function removeCartItem(cartItemId) {
         try {
-            const response = await fetch(`/api/cart/remove/${cartItemId}`, {
+            const response = await fetch(`${BASE_URL}/api/cart/remove/${cartItemId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -317,7 +318,7 @@
         showNotification("Creating your store order profile...", "#d4edda", "#155724", "#c3e6cb");
 
         try {
-            const orderResponse = await fetch('/api/orders/checkout', {
+            const orderResponse = await fetch(`${BASE_URL}/api/orders/checkout`, {
                 method: 'POST',
                 headers: { 
                     'Authorization': 'Bearer ' + token, 

@@ -5,6 +5,7 @@
 <title>Yi's Store - Orders</title>
 <link rel="stylesheet" href="main.css">
 <script src="logout-login.js"></script>
+<script src="config.js"></script>
 <style>
     .orders-container {
         margin-top: 20px;
@@ -153,7 +154,7 @@
         const errorDisplay = document.getElementById('errorDisplay');
         
         try {
-            const response = await fetch('/api/orders/history', {
+            const response = await fetch(`${BASE_URL}/api/orders/history`, {
                 method: 'GET',
                 headers: {
                     'Authorization': 'Bearer ' + token,

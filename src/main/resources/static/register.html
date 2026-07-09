@@ -5,6 +5,7 @@
 <title>Store - Register</title>
 <link rel="stylesheet" href="main.css">
 <link rel="stylesheet" href="auth.css">
+<script src="config.js"></script>
 </head>
 
 <body>
@@ -83,7 +84,7 @@
             // that is why we need asyns in beginning
             // so we can do things other than the function itself
             // while the function run in back ground
-            const response = await fetch('http://localhost:8080/api/users/register', {
+            const response = await fetch(`${BASE_URL}/api/users/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

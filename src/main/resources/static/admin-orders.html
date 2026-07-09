@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="main.css">
     <script src="admin.js"></script>
     <script src="logout-login.js"></script>
+    <script src="config.js"></script>
     <style>
         .metrics-bar {
             display: grid;
@@ -224,7 +225,7 @@
     async function fetchOrders() {
         const tbody = document.getElementById('orderTableBody');
         try {
-            const response = await fetch('/api/orders/manage', {
+            const response = await fetch(`${BASE_URL}/api/orders/manage`, {
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -304,7 +305,7 @@
         const nextStatus = document.getElementById(`statusSelect-${orderId}`).value;
         
         try {
-            const response = await fetch(`/api/orders/manage/${orderId}/status`, {
+            const response = await fetch(`${BASE_URL}/api/orders/manage/${orderId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': 'Bearer ' + token,

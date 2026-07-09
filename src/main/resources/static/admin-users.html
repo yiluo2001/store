@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="main.css">
     <script src="admin.js"></script>
     <script src="logout-login.js"></script>
+    <script src="config.js"></script>
     <style>
         .user-table {
             width: 100%;
@@ -157,7 +158,7 @@
     async function fetchUsers() {
         const tbody = document.getElementById('userTableBody');
         try {
-            const response = await fetch('/api/users/manage', {
+            const response = await fetch(`${BASE_URL}/api/users/manage`, {
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -205,7 +206,7 @@
         const selectedRole = document.getElementById(`roleSelect-${userId}`).value;
         
         try {
-            const response = await fetch(`/api/users/manage/${userId}/role`, {
+            const response = await fetch(`${BASE_URL}/api/users/manage/${userId}/role`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': 'Bearer ' + token,
