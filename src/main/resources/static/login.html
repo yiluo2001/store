@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Store - Log In</title>
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="auth.css">
+<script src="logout.js"></script>
+</head>
+
+<body>
+<div class="page-wrapper">
+    <div class="paper">
+        <header class="paper-header">
+            <div class="breadcrumbs">
+                <a href="store.html">Yi's Store</a>
+            </div>
+        </header>
+
+        <div class="paper-top-strip">
+            <nav class="main-nav" style="display: flex;">
+                <a href="products.html">Products</a>
+                <a href="cart.html">Cart</a>
+                <a href="orders.html">Orders</a>
+                <a href="login.html" style="margin-left: auto; margin-right: 0;">Log in</a>
+            </nav>
+        </div>
+        
+        <main class="paper-content">
+            <div class="auth-container">
+                <h1 style="font-size: 26px; text-align: center; margin-bottom: 25px;">Account Login</h1>
+                
+                <div id="feedbackMessage" class="message"></div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Enter your username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit">Sign In</button>
+                </form>
+                
+                <div class="auth-switch">
+                    New customer? <a href="register.html">Create an account</a>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const usernameInput = document.getElementById('username').value;
+        const passwordInput = document.getElementById('password').value;
+        const feedbackBox = document.getElementById('feedbackMessage');
+
+        feedbackBox.style.display = 'none';
+        feedbackBox.className = 'message';
+
+        try {
+            // Basic Authentication (Basic Auth) here
+            // btoa means binary to ascii
+            // const credentials = btoa(usernameInput + ':' + passwordInput);
+            // basic auth approach
+            // username/password inside header
+            // const response = await fetch('http://localhost:8080/api/users/login', { 
+            //     method: 'POST',
+            //     headers: {
+            //         'Authorization': 'Basic ' + credentials,
+            //         'Content-Type': 'application/json'
+            //     }
+            // });
+
+            // jwt approach
+            // username/password inside body
+            const response = await fetch('http://localhost:8080/api/users/login', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usernameInput, password: passwordInput })
+            });
+
+            if (response.ok) {
+
+                // store jwt token in sessionStorage
+                const data = await response.json();
+                sessionStorage.setItem('jwtToken', data.token);
+
+                // store role in tab session storage
+                sessionStorage.setItem('role', data.role);
+
+                sessionStorage.setItem('username', usernameInput);
+
+                feedbackBox.textContent = "Login successful! Welcome back.";
+                feedbackBox.classList.add('success');
+                feedbackBox.style.display = 'block';
+
+                setTimeout(() => {
+                    if (data.role === 'ROLE_ADMIN') {
+                        window.location.href = 'admin-products.html';
+                    } else {
+                        window.location.href = 'products.html';
+                    }
+                }, 1500);
+
+            } else {
+                feedbackBox.textContent = "Invalid username or password.";
+                feedbackBox.classList.add('error');
+                feedbackBox.style.display = 'block';
+            }
+        } catch (error) {
+            feedbackBox.textContent = "Unable to connect to the store servers.";
+            feedbackBox.classList.add('error');
+            feedbackBox.style.display = 'block';
+            console.error('Network Error:', error);
+        }
+    });
+</script>
+</body>
+</html>

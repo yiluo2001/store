@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Store - Admin Product Management</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="admin.js"></script>
+    <script src="logout-login.js"></script>
+    <style>
+        .admin-grid {
+            display: grid;
+            /* only 1 column, fr means frational unit */
+            grid-template-columns: 1fr;
+            /* items 40 pixel apart */
+            gap: 40px;
+        }
+
+        /* only apply this if screen width is 768 px or more */
+        @media (min-width: 768px) {
+            .admin-grid {
+                /* 2 columns, 1/3 and 2/3 */
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+
+        .admin-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .admin-card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #333333;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333333;
+        }
+        
+        /* textarea is multi-line text box */
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+            background: #ffffff;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            height: 80px;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #333333;
+        }
+
+        /* btn means button */
+        .btn-action {
+            padding: 10px 15px;
+            background: #222222;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-action:hover {
+            background: #444444;
+        }
+
+        .btn-delete {
+            background: #a31313;
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-delete:hover {
+            background: #7a0e0e;
+        }
+
+        /* product inventory table */
+        .product-table {
+            width: 100%;
+            /* be dafault each item has its own borders, this merges the borders */
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+
+        /* table header and table data */
+        .product-table th, .product-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .product-table th {
+            background-color: #e9e9e9;
+            font-weight: bold;
+            color: #333333;
+        }
+
+        .product-table td:last-child {
+            text-align: right;
+            /* make box as small as possible */
+            width: 1%;
+            /* keep text one single line */
+            white-space: nowrap;
+        }
+
+        /* table row */
+        .product-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .message-banner {
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 3px;
+            display: none;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="page-wrapper">
+    <div class="paper">
+        <header class="paper-header">
+            <div class="breadcrumbs">
+                <a href="store.html">Yi's Store</a>
+            </div>
+            <!-- <div style="font-size: 14px; color: #666;">
+                <a href="products.html" style="color: inherit; text-decoration: none;">View as Customer</a> 
+            </div> -->
+            <!-- align-items: center; center everything vertically -->
+            <div style="font-size: 14px; color: #666; display: flex; align-items: center; gap: 10px;">
+                <span id="userGreeting"></span>
+                <span style="color: #ccc;">|</span>
+                <a href="products.html" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">View as Customer</a> 
+            </div>
+        </header>
+
+        <div class="paper-top-strip">
+            <nav class="main-nav" style="display: flex;">
+                <a href="admin-products.html" style="color: #000000;">Manage Products</a>
+                <a href="admin-orders.html">Manage Orders</a>
+                <a href="admin-users.html">Manage Users</a>
+                <a href="#" onclick="executeLogout()" style="margin-left: auto; margin-right: 0;">Log out</a>
+            </nav>
+        </div>
+        
+        <main class="paper-content">
+            <h1 style="margin-bottom: 25px;">Product Inventory Management</h1>
+            
+            <div id="statusMessage" class="message-banner"></div>
+
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h2>Add New Product</h2>
+                    <form id="productForm">
+                        <div class="form-group">
+                            <label for="prodName">Product Name</label>
+                            <input type="text" id="prodName" required placeholder="e.g., Ceramic Mug">
+                        </div>
+                        <div class="form-group">
+                            <label for="prodDescription">Description</label>
+                            <textarea id="prodDescription" required placeholder="Describe item metrics and specifications..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="prodPrice">Price (€)</label>
+                            <input type="number" id="prodPrice" step="0.01" min="0.00" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="prodStock">Initial Stock Quantity</label>
+                            <input type="number" id="prodStock" min="0" required placeholder="0">
+                        </div>
+                        <button type="submit" class="btn-action" style="width: 100%;">Save Product</button>
+                    </form>
+                </div>
+
+                <div class="admin-card">
+                    <h2>Current Inventory</h2>
+                    <div style="overflow-x: auto;">
+                        <table class="product-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: #888;">Loading product inventory...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    const token = sessionStorage.getItem('jwtToken');
+    if (!token) {
+        window.location.href = 'login.html';
+    }
+
+    // after browser finish loading html
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchInventory();
+        displayUsername();
+    });
+
+    function displayUsername() {
+        const username = sessionStorage.getItem('username');
+        document.getElementById('userGreeting').textContent = `Hi, ${username}`;
+    }
+
+    async function fetchInventory() {
+        const tbody = document.getElementById('inventoryTableBody');
+        try {
+            const response = await fetch('/api/products', {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                // turn http response wrapper into json
+                const products = await response.json();
+                tbody.innerHTML = '';
+
+                if (products.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No items in database catalog.</td></tr>';
+                    return;
+                }
+
+                products.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${product.id}</td>
+                        <td><strong>${product.name}</strong></td>
+                        <td><strong>${product.description}</strong></td>
+                        <td>€${product.price.toFixed(2)}</td>
+                        <td>${product.stockQuantity}</td>
+                        <td>
+                            <button class="btn-delete" onclick="deleteProduct(${product.id})">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #721c24;">Failed to extract store inventory profiles.</td></tr>';
+            }
+        } catch (error) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #721c24;">Connection failure to administration service.</td></tr>';
+        }
+    }
+
+    document.getElementById('productForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        const banner = document.getElementById('statusMessage');
+        const payload = {
+            name: document.getElementById('prodName').value,
+            description: document.getElementById('prodDescription').value,
+            price: parseFloat(document.getElementById('prodPrice').value),
+            stockQuantity: parseInt(document.getElementById('prodStock').value)
+        };
+
+        try {
+            const response = await fetch('/api/products', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                showNotification("Product catalog item saved successfully!", "#d4edda", "#155724", "#c3e6cb");
+                document.getElementById('productForm').reset();
+                fetchInventory(); // reload inventory table
+            } else {
+                showNotification("Failed to save product. Ensure account possesses appropriate administrative role parameters.", "#f8d7da", "#721c24", "#f5c6cb");
+            }
+        } catch (error) {
+            showNotification("Network communication error during data persist handling.", "#f8d7da", "#721c24", "#f5c6cb");
+        }
+    });
+
+    async function deleteProduct(productId) {
+        if (!confirm("Are you certain you wish to delete this item layout profile?")) return;
+
+        try {
+            const response = await fetch(`/api/products/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            if (response.ok) {
+                showNotification("Product removed from index database records.", "#d4edda", "#155724", "#c3e6cb");
+                fetchInventory();
+            } else {
+                showNotification("Unauthorized deletion sequence rejected by server architecture logic.", "#f8d7da", "#721c24", "#f5c6cb");
+            }
+        } catch (error) {
+            showNotification("Network communication error executing component drop sequence.", "#f8d7da", "#721c24", "#f5c6cb");
+        }
+    }
+</script>
+</body>
+</html>

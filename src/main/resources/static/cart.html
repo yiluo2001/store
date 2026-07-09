@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Store - Shopping Cart</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="logout-login.js"></script>
+    <style>
+        .cart-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+            margin-top: 10px;
+        }
+
+        .cart-table th, .cart-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .cart-table th {
+            background-color: #e9e9e9;
+            font-weight: bold;
+            color: #333333;
+        }
+
+        .cart-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .qty-input {
+            width: 50px;
+            padding: 5px;
+            text-align: center;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .cart-summary {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background: #fafafa;
+            max-width: 350px;
+            margin-left: auto;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        .summary-row.total {
+            font-size: 18px;
+            font-weight: bold;
+            border-top: 2px solid #333333;
+            padding-top: 15px;
+            color: #000000;
+        }
+
+        .btn-update {
+            background: #ffffff;
+            color: #222222;
+            border: 1px solid #222222;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-update:hover {
+            background: #222222;
+            color: #ffffff;
+        }
+
+        .btn-remove {
+            background: none;
+            color: #a31313;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 0;
+        }
+
+        .btn-remove:hover {
+            text-decoration: underline;
+        }
+
+        .btn-checkout {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #222222;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .btn-checkout:hover {
+            background: #444444;
+        }
+
+        .message-banner {
+            margin-bottom: 25px;
+            padding: 12px;
+            border-radius: 3px;
+            display: none;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="page-wrapper">
+    <div class="paper">
+        <header class="paper-header">
+            <div class="breadcrumbs">
+                <a href="store.html">Yi's Store</a>
+            </div>
+            <div style="font-size: 14px; color: #666; display: flex; align-items: center; gap: 10px;">
+                <span id="userGreeting"></span>
+                <span id="adminDashboard_" style="color: #ccc; display: none;">|</span>
+                <a id="adminDashboard" href="admin-products.html" style="color: inherit; text-decoration: none; display: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">View Admin Dashboard</a> 
+            </div>
+        </header>
+
+        <div class="paper-top-strip">
+            <nav class="main-nav" style="display: flex;">
+                <a href="products.html">Products</a>
+                <a href="cart.html" style="color: #000000;">Cart</a>
+                <a href="orders.html">Orders</a>
+                <a href="#" id="authLink" style="margin-left: auto; margin-right: 0;"></a>
+            </nav>
+        </div>
+        
+        <main class="paper-content">
+            <h1>Your Shopping Cart</h1>
+            <p style="color: #666; margin-bottom: 25px;">Review selected choices before generating item distribution execution orders.</p>
+            
+            <div id="statusMessage" class="message-banner"></div>
+
+            <div id="cartContentWrapper">
+                <!-- automatically add a horizontal scrollbar when too wide -->
+                <div style="overflow-x: auto;">
+                    <table class="cart-table">
+                        <thead>
+                            <tr>
+                                <th>Product Details</th>
+                                <th>Unit Price</th>
+                                <th>Quantity</th>
+                                <th>Subtotal</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #888;">Loading your selection profiles...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="cart-summary">
+                    <div class="summary-row">
+                        <span>Items Count</span>
+                        <span id="totalItemsCount">0</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Estimated Order Gross</span>
+                        <span id="grandTotalAmount">€0.00</span>
+                    </div>
+                    <button class="btn-checkout" onclick="proceedToCheckout()">Proceed to Checkout</button>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    const token = sessionStorage.getItem('jwtToken');
+    if (!token) {
+        window.location.href = 'login.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchCartContents();
+        displayUsername();
+        toggleAdminDashboard();
+        updateAuthLink();
+    });
+
+    async function fetchCartContents() {
+        const tbody = document.getElementById('cartTableBody');
+        const wrapper = document.getElementById('cartContentWrapper');
+
+        try {
+            const response = await fetch('/api/cart', {
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (response.ok) {
+                const cartItems = await response.json(); // array of CartItem objects
+                tbody.innerHTML = '';
+
+                if (cartItems.length === 0) {
+                    wrapper.innerHTML = `
+                        <div style="text-align: center; color: #888; padding: 40px 0;">
+                            <p style="font-size: 16px; margin-bottom: 20px;">Your shopping cart is currently empty.</p>
+                            <a href="products.html" class="btn-update" style="text-decoration: none; padding: 10px 15px;">Continue Shopping</a>
+                        </div>`;
+                    return;
+                }
+
+                let totalCalculatedGross = 0;
+                let totalUnitsCount = 0;
+
+                cartItems.forEach(item => {
+                    const product = item.product;
+                    const quantity = item.quantity;
+                    const itemSubtotal = product.price * quantity;
+
+                    totalCalculatedGross += itemSubtotal;
+                    totalUnitsCount += quantity;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${product.name}</strong></td>
+                        <td>€${product.price.toFixed(2)}</td>
+                        <td>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="number" id="qty-${item.id}" class="qty-input" value="${quantity}" min="1">
+                                <button class="btn-update" onclick="updateItemQuantity(${item.id})">Update</button>
+                            </div>
+                        </td>
+                        <td><strong>€${itemSubtotal.toFixed(2)}</strong></td>
+                        <td>
+                            <button class="btn-remove" onclick="removeCartItem(${item.id})">Remove</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('totalItemsCount').textContent = totalUnitsCount;
+                document.getElementById('grandTotalAmount').textContent = '€' + totalCalculatedGross.toFixed(2);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #a31313;">Failed to load data profile lines.</td></tr>';
+            }
+        } catch (error) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #a31313;">Connection error interfacing with cart pipeline core.</td></tr>';
+        }
+    }
+
+    // PUT /api/cart/update/{cartItemId}?quantity=X
+    async function updateItemQuantity(cartItemId) {
+        const inputElement = document.getElementById(`qty-${cartItemId}`);
+        const nextQuantityValue = parseInt(inputElement.value);
+
+        if (isNaN(nextQuantityValue) || nextQuantityValue < 1) {
+            showNotification("Please supply a valid quantity calculation value.", "#f8d7da", "#721c24", "#f5c6cb");
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/cart/update/${cartItemId}?quantity=${nextQuantityValue}`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (response.ok) {
+                showNotification("Cart context mapping quantity changed successfully.", "#d4edda", "#155724", "#c3e6cb");
+                fetchCartContents(); // asynchronously
+            } else {
+                showNotification("Could not modify item data count parameters.", "#f8d7da", "#721c24", "#f5c6cb");
+            }
+        } catch (error) {
+            showNotification("Network timeout tracking structural quantity modification requests.", "#f8d7da", "#721c24", "#f5c6cb");
+        }
+    }
+
+    // DELETE /api/cart/remove/{cartItemId}
+    // the await part of async function happen asyncly to out side world, but everything insde async function is step by step
+    // await does 2 things, make sure meal is fianlly ready, and signal the async (to out side world) starting point
+    async function removeCartItem(cartItemId) {
+        try {
+            const response = await fetch(`/api/cart/remove/${cartItemId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (response.ok) {
+                showNotification("Item removed from your cart selection view.", "#d4edda", "#155724", "#c3e6cb");
+                fetchCartContents();
+            } else {
+                showNotification("Server architecture rejected item reduction call context.", "#f8d7da", "#721c24", "#f5c6cb");
+            }
+        } catch (error) {
+            showNotification("Network execution failure while clearing targeted line entity.", "#f8d7da", "#721c24", "#f5c6cb");
+        }
+    }
+
+    async function proceedToCheckout() {
+        showNotification("Creating your store order profile...", "#d4edda", "#155724", "#c3e6cb");
+
+        try {
+            const orderResponse = await fetch('/api/orders/checkout', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': 'Bearer ' + token, 
+                    'Content-Type': 'application/json' 
+                }
+            });
+
+            if (!orderResponse.ok) {
+                throw new Error("Could not initialize your checkout order profile.");
+            }
+
+            const orderData = await orderResponse.json();
+
+            window.location.href = `checkout.html?orderId=${orderData.id}`;
+
+        } catch (error) {
+            showNotification(error.message, "#f8d7da", "#721c24", "#f5c6cb");
+        }
+    }
+
+    function showNotification(text, bg, color, border) {
+        const banner = document.getElementById('statusMessage');
+        banner.textContent = text;
+        banner.style.backgroundColor = bg;
+        banner.style.color = color;
+        banner.style.border = `1px solid ${border}`;
+        banner.style.display = 'block';
+        setTimeout(() => { banner.style.display = 'none'; }, 3000);
+    }
+</script>
+</body>
+</html>

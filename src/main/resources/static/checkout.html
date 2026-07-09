@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Store - Secure Checkout</title>
+<link rel="stylesheet" href="main.css">
+<script src="logout-login.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+.checkout-container {
+    max-width: 500px;
+    /* 40 px top and bottom, honrizontal centered */
+    margin: 40px auto;
+    padding: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #fafafa;
+}
+
+.order-summary-box {
+    border-bottom: 2px solid #333333;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+/* # means id */
+/* #card-element {
+    background: #ffffff;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-bottom: 20px;
+} */
+
+#card-errors {
+    color: #a31313;
+    font-size: 14px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.btn-pay {
+    width: 100%;
+    padding: 12px;
+    background: #222222;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-pay:hover {
+    background: #444444;
+}
+
+.btn-pay:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+.message-banner {
+    margin-bottom: 20px;
+    padding: 12px;
+    border-radius: 3px;
+    display: none;
+    text-align: center;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+<div class="page-wrapper">
+    <div class="paper">
+        <header class="paper-header">
+            <div class="breadcrumbs">
+                <a href="products.html">Yi's Store</a>
+            </div>
+            <div style="font-size: 14px; color: #666; display: flex; align-items: center; gap: 10px;">
+                <span id="userGreeting"></span>
+                <span id="adminDashboard_" style="color: #ccc; display: none;">|</span>
+                <a id="adminDashboard" href="admin-products.html" style="color: inherit; text-decoration: none; display: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">View Admin Dashboard</a> 
+            </div>
+        </header>
+
+        <div class="paper-top-strip">
+            <nav class="main-nav" style="display: flex;">
+                <a href="products.html">Products</a>
+                <a href="cart.html">Cart</a>
+                <a href="orders.html">Orders</a>
+                <a href="#" id="authLink" style="margin-left: auto; margin-right: 0;"></a>
+            </nav>
+        </div>
+
+        <main class="paper-content">
+            <div class="checkout-container">
+                <h1 style="font-size: 24px; text-align: center; margin-bottom: 20px;">Secure Checkout</h1>
+                
+                <div id="statusMessage" class="message-banner"></div>
+
+                <div class="order-summary-box">
+                    <div class="summary-row">
+                        <span>Order ID</span>
+                        <span id="displayOrderId" style="font-weight: bold;"></span>
+                    </div>
+                </div>
+
+                <form id="paymentForm">
+                    <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #333;">Select Your Method</label>
+                    
+                    <div style="background-color: #e8f4fd; border: 1px solid #b8daff; color: #004085; padding: 12px; border-radius: 4px; font-size: 13px; margin-bottom: 15px; line-height: 1.4;">
+                        <strong>Testing Note:</strong> For card payment, use <code>4242 4242 4242 4242</code> as the card number, and any future date as the expiration date. See the <a href="https://docs.stripe.com/testing#cards" target="_blank" style="color: #0056b3; text-decoration: underline;">Stripe Testing Docs</a> for details.<br>
+                        For other methods, the redirected page will let you choose to authorize or fail the test payment.
+                    </div>
+
+                    <div id="card-element">
+                        <div class="spinner" style="text-align: center; color: #666; padding: 10px;">Loading secure payment form...</div>
+                    </div>
+                    
+                    <div id="card-errors" role="alert"></div>
+
+                    <button type="submit" id="submitPayButton" class="btn-pay">Authorize Payment</button>
+                </form>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    const token = sessionStorage.getItem('jwtToken');
+    if (!token) {
+        window.location.href = 'login.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        displayUsername();
+        toggleAdminDashboard();
+        updateAuthLink();
+        initializePaymentForm();
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+
+    if (!orderId) {
+        alert("No valid target transaction execution scope provided.");
+        window.location.href = 'cart.html';
+    }
+
+    document.getElementById('displayOrderId').textContent = orderId;
+
+    const stripe = Stripe('pk_test_51Tmb9y8UeO8xS5Tvn6pz3HBe0XQ69sdErmn1rhXjsBWlEM6h7SGKCU7OfEPFaa5XidDYH0ARanZR7OYHmpPddjot00dEA8OiLT');
+
+    let elements;
+    let paymentElement;
+
+    async function initializePaymentForm() {
+        try {
+            const intentResponse = await fetch('/api/payments/create-intent', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ orderId: parseInt(orderId) })
+            });
+
+            if (!intentResponse.ok) {
+                throw new Error("Could not initialize target checkout context session.");
+            }
+
+            const paymentData = await intentResponse.json();
+            const clientSecret = paymentData.clientSecret;
+
+            elements = stripe.elements({ clientSecret: clientSecret });
+ 
+            paymentElement = elements.create('payment', {
+                layout: {
+                    type: 'accordion',
+                    defaultCollapsed: false,
+                    radios: false,
+                    spacedAccordionItems: false
+                }
+            });
+            
+            paymentElement.mount('#card-element');
+
+        } catch (error) {
+            showNotification("Communication exception parsing checkout request parameters.", "#f8d7da", "#721c24", "#f5c6cb");
+        }
+    }
+
+    document.getElementById('paymentForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const payButton = document.getElementById('submitPayButton');
+        const errorDisplay = document.getElementById('card-errors');
+        
+        payButton.disabled = true;
+        errorDisplay.textContent = '';
+
+        try {
+            const result = await stripe.confirmPayment({
+                elements,
+                confirmParams: {
+                    return_url: window.location.origin + '/payment-status.html', 
+                },
+            });
+
+            if (result.error) {
+                errorDisplay.textContent = result.error.message;
+                payButton.disabled = false;
+            }
+        } catch (error) {
+            showNotification("Communication exception parsing execution parameters.", "#f8d7da", "#721c24", "#f5c6cb");
+            payButton.disabled = false;
+        }
+    });
+
+    function showNotification(text, bg, color, border) {
+        const banner = document.getElementById('statusMessage');
+        banner.textContent = text;
+        banner.style.backgroundColor = bg;
+        banner.style.color = color;
+        banner.style.border = `1px solid ${border}`;
+        banner.style.display = 'block';
+    }
+</script>
+</body>
+</html>
