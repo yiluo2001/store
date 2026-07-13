@@ -43,9 +43,10 @@ public class SecurityConfig {
                 // so that server ram does not remember anything
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // User
                         .requestMatchers("/api/users/register").permitAll()
                         .requestMatchers("/api/users/login").permitAll()
-                        .requestMatchers("/api/users/manage/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/manage/**").hasRole("ADMIN")// automatically searches for "ROLE_ADMIN"
 
                         // Product
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
@@ -56,7 +57,7 @@ public class SecurityConfig {
                         // Cart
                         .requestMatchers("/api/cart/**").authenticated()
 
-                        // Order Rules
+                        // Order
                         .requestMatchers("/api/orders/**").authenticated()
 
                         // Payment
