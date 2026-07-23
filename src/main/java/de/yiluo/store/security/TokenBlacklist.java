@@ -16,8 +16,8 @@ public class TokenBlacklist {
     // it means new ConcurrentHashMap<String, boolean>(), where String is from Set<String>
     // just so less boilerplate is written
     private final Set<String> blacklistedTokens = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
     // final means the set is glued down, but we still can edit content inside it
+
     public void blacklistToken(String token) {
         blacklistedTokens.add(token);
     }

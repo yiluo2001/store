@@ -3,6 +3,7 @@ package de.yiluo.store.user;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+// without @Component: Spring ignores the class completely
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -22,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
             admin.setUsername("admin");
             admin.setPassword("admin123");
             admin.setRole("ROLE_ADMIN");
+            // save it to repository
             userService.createUser(admin);
             System.out.println("Default admin user created: admin / admin123");
         }

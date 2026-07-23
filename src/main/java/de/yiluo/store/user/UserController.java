@@ -67,6 +67,7 @@ public class UserController {
         String username = credentials.get("username");
         String password = credentials.get("password");
 
+        // check if username exists and if password correct
         // nothing happens if success
         // throw error if bad password
         authenticationManager.authenticate(
@@ -82,10 +83,10 @@ public class UserController {
 
         String role = userDetails.getAuthorities().stream()
                 .findFirst()
-                // bc previous result is Optional
-                // to deal with the content inside Optional wrapper
-                // we need to use map
+                // .findFirst() return optional bc you are not sure if this is empty list
+                // grantedAuthority.getAuthority() turn optional GrantedAuthority into optional string
                 .map(grantedAuthority -> grantedAuthority.getAuthority())
+                // this take thing out of the optional wrapper
                 .orElse("ROLE_USER");
         response.put("role", role);
 
@@ -103,6 +104,9 @@ public class UserController {
             return ResponseEntity.ok("Successfully blacklisted token and logged out.");
         }
 
+        // can add so that frontend session storage is deleted
+
+        // you cannot log out when not logged in
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No valid bearer token provided.");
     }
 

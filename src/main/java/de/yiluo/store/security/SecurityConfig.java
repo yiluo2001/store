@@ -25,23 +25,20 @@ import java.util.Arrays;
 @EnableWebSecurity // turn off default security setting and apply custom
 public class SecurityConfig {
     // HttpSecurity http is temporary configuration builder object
-    // throws Exception let caller of the method to handle potential exception
-    // instead of the method go wrong itself
+    // http and jwtAuthFilter are Method Parameter Injection
+    // @Bean turn output of a method into a bean
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter) throws Exception {
         // method chaining: same as doing the methods one by one
         http
-                // if jwt is inside httponly cookie, then immune to xss
-                // anti-csrf token is inside html so immune to csrf
-                // they are used together to fight both xss and csrf
-                // but here jwt is inside header, so also immune to csrf
-                // so anti-csrf token is not needed, but open to xss
-                // but front end framework fight xss for me
+                // apply CORS rules using a bean provided in this file
                 .cors(Customizer.withDefaults())
-                // .cors(cors -> cors.configure(http))
+                // disabled bc cross site request will not have jwt token in header
+                // but jwt not immune to xss since i store it in session storage
                 .csrf(csrf -> csrf.disable())
-                // so that server ram does not remember anything
+                // so that server ram does not remember anything (stateless)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // enforced by AuthorizationFilter
                 .authorizeHttpRequests(auth -> auth
                         // User
                         .requestMatchers("/api/users/register").permitAll()
@@ -61,20 +58,19 @@ public class SecurityConfig {
                         .requestMatchers("/api/orders/**").authenticated()
 
                         // Payment
-                        // must be public for Stripe to reach it
-                        // users must log in to purchase
+                        // webhook must be public for Stripe to reach it
                         .requestMatchers("/api/payments/webhook").permitAll()
                         .requestMatchers("/api/payments/create-intent").authenticated()
 
-                        // will empty static folder in the end, testing just for now
+                        // for static folder files, will empty the folder in the end, testing just for now
                         .requestMatchers("/**").permitAll()
 
-                        .requestMatchers("/admin-products.html").permitAll()
                         .anyRequest().authenticated()
                 )
 
                 // to add jwtAuthFilter before doing UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                // so the order is 1 jwtFitler 2 UsernamePasswordAuthenticationFilter 3 AuthorizationFilter
 
                 // put username and password in httpheader in every request for authentification
                 // default approach
@@ -83,8 +79,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // so that we can perform manual log-in later
-    // authenticationManager.authenticate(...)
+    // it handles first ever login when no jwt token yet
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -103,6 +98,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
 
+        // apply the rules above
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

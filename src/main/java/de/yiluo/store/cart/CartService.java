@@ -31,7 +31,7 @@ public class CartService {
         Optional<CartItem> existingItem = cartRepository.findByUserAndProduct(user, product);
 
         if (existingItem.isPresent()) {
-            CartItem item = existingItem.get();
+            CartItem item = existingItem.get(); // get thing inside optional wrapper
             item.setQuantity(item.getQuantity() + quantity);
             return cartRepository.save(item);
         } else {

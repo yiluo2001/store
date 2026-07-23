@@ -11,8 +11,11 @@ import java.util.Optional;
 
 @Repository
 public interface CartRepository extends JpaRepository<CartItem, Long> {
-    // JOIN FETCH: inner join the CartItem and Product, hydrate Product
+    // jpql
+    // JOIN: inner join the CartItem and Product
+    // FETCH: hydrate Product
     // to avoid n+1 problem
+    // no need to join user as well bc user is already given with @Param("user")
     @Query("SELECT c FROM CartItem c JOIN FETCH c.product WHERE c.user = :user")
     List<CartItem> findByUser(@Param("user") User user);
     Optional<CartItem> findByUserAndProduct(User user, Product product);

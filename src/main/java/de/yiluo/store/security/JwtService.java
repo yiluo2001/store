@@ -16,30 +16,37 @@ import java.util.function.Function;
 public class JwtService {
 
     // Keys.hmacShaKeyFor requires password be at least 256-bits long (32 characters)
-    // Keys.hmacShaKeyFor () turn string into SecretKey obj to optimize math and guarantee length
     private static final String SECRET_KEY = "my-ultra-secure-and-very-long-secret-must-change-this-in-production";
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    // SECRET_KEY.getBytes() turn string into byte array
+    // Keys.hmacShaKeyFor () turn byte array into SecretKey obj to optimize math and guarantee length
 
     public String generateToken(UserDetails userDetails) {
         // to add custom claim in the future
         Map<String, Object> extraClaims = new HashMap<>();
         // method chaining, same as apply one method and use returned value for next method
         return Jwts.builder()
+                // 1. adds custom claims
                 .claims(extraClaims)
+                // 2. adds standard sub iat exp claim
                 .subject(userDetails.getUsername())
                 // unit is millisecond
                 .issuedAt(new Date(System.currentTimeMillis()))
                 // valid for 10 hours
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(key)
+                // final step to create the string
                 .compact();
     }
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(key)
+                // finalize and assemble the parser object
                 .build()
+                // decode, verify, and check expiration
                 .parseSignedClaims(token)
+                // extract the internal claims
                 .getPayload();
     }
 
