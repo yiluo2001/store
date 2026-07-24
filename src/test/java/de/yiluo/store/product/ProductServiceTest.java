@@ -79,7 +79,6 @@ class ProductServiceTest {
 
     @Test
     void updateProduct_ShouldModifyExistingPropertiesAndSave() {
-        // Given
         Product updatedData = new Product();
         updatedData.setName("Upgraded Keyboard");
         updatedData.setDescription("Wireless RGB Backlit");

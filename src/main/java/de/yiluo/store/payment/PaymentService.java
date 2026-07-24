@@ -29,6 +29,7 @@ public class PaymentService {
         long amountInCents = order.getTotalAmount().multiply(new java.math.BigDecimal(100)).longValue();
 
         // info stripe needs to create intent
+        // Stripe.apiKey = apiKey; is being used under the table
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                 .setAmount(amountInCents)
                 .setCurrency("eur")

@@ -29,11 +29,6 @@ public class PaymentController {
     // bc they do the same thing, just waiter vs cook
     @PostMapping("/create-intent")
     public ResponseEntity<PaymentResponse> createPaymentIntent(@RequestBody PaymentRequest request) {
-        // webhookSecret is password shared by me and stripe
-        // jsonPayload is info about the transaction
-        // sigHeader should be hashed result of jsonPayload and webhookSecret
-        // here I hash jsonPayload and webhookSecret myself to compare with sigHeader
-        // matched meaning sigHeader is indeed sent by stripe
         try {
             PaymentResponse response = paymentService.createPaymentIntent(request.getOrderId());
             return ResponseEntity.ok(response);
@@ -44,15 +39,22 @@ public class PaymentController {
     }
 
     // webhook is to handle post request from stripe
+    // webhookSecret is password shared by me and stripe
+    // jsonPayload is info about the transaction
+    // sigHeader should be hashed result of jsonPayload and webhookSecret
+    // here I hash jsonPayload and webhookSecret myself to compare with sigHeader
+    // matched meaning sigHeader is indeed sent by stripe
     @PostMapping("/webhook")
     public ResponseEntity<String> handleStripeWebhook(
             @RequestBody String jsonPayload,
             // "Stripe-Signature" is a key in http header
             @RequestHeader("Stripe-Signature") String sigHeader) {
 
+        // webhook event sent from stripe
         Event event;
 
         try {
+            // this is the actual compare part: hash jsonPayload and webhookSecret myself to compare with sigHeader
             event = Webhook.constructEvent(jsonPayload, sigHeader, webhookSecret);
         } catch (Exception e) {
             System.out.println("Webhook signature verification failed: " + e.getMessage());
@@ -60,14 +62,16 @@ public class PaymentController {
         }
 
         if ("payment_intent.succeeded".equals(event.getType())) {
+            // from json to optional obj
+            // using Deserializer
             EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
             StripeObject stripeObject;
 
-            // safe fallback if Stripe API Dashboard version doesn't perfectly match local pom.xml library versions
+            // if Stripe API Dashboard version perfectly matches local pom.xml library versions
             if (dataObjectDeserializer.getObject().isPresent()) {
                 // .get() to get content from optional wrapper
                 stripeObject = dataObjectDeserializer.getObject().get();
-            } else {
+            } else { // if Stripe API library versions do not match
                 System.out.println("Warning: API version layout mismatch detected. Using unsafe deserializer fallback pattern mapping.");
                 try {
                     stripeObject = dataObjectDeserializer.deserializeUnsafe();
@@ -78,10 +82,12 @@ public class PaymentController {
             }
 
             try {
+                // turn stripe obj into PaymentIntent
                 PaymentIntent paymentIntent = (PaymentIntent) stripeObject;
                 String orderIdStr = paymentIntent.getMetadata().get("order_id");
 
                 if (orderIdStr != null) {
+                    // string to long
                     Long orderId = Long.parseLong(orderIdStr);
                     orderService.updateOrderStatus(orderId, "PAID");
                     System.out.println("Order " + orderId + " successfully marked as PAID.");

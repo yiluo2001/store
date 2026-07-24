@@ -23,9 +23,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
+// for controller layer testing
 @WebMvcTest(UserController.class)
 class UserControllerTest {
 
+    // to simulate incoming http request
     @Autowired
     private MockMvc mockMvc;
 
@@ -34,6 +36,9 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    // you also need when then for MockitoBean
+    // but it is real spring environment
+    // Mock is fake spring environment
     @MockitoBean
     private UserService userService;
 

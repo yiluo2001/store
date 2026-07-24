@@ -16,10 +16,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+// load Mockito so it can process annotations like @Mock and @InjectMocks
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    // @Mock make it mocking obj that do what you say
+    // @Mock make it a mocking obj that does what you say
+    // does nothing by default
     @Mock
     private UserRepository userRepository;
 
@@ -52,6 +54,7 @@ class UserServiceTest {
         assertNotNull(createdUser);
         assertEquals("encodedPassword", createdUser.getPassword());
         assertEquals("ROLE_USER", createdUser.getRole());
+        // executed exactly once
         verify(userRepository, times(1)).save(sampleUser);
     }
 

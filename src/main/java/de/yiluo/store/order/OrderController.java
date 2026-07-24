@@ -28,6 +28,9 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
 
+    // note that we need to send this to frontend
+    // so Order obj must be converted into JSON
+    // the 1+n+m problem happens in the process
     @GetMapping("/history")
     public ResponseEntity<List<Order>> getOrderHistory(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(orderService.getUserOrderHistory(user));

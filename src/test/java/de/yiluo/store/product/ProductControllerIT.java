@@ -20,7 +20,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// integration test
+// integration test, i.e. boot up entire application
 @SpringBootTest
 // look for application-test.properties
 @ActiveProfiles("test")
